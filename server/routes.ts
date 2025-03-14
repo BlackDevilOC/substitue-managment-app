@@ -10,7 +10,7 @@ import * as path from 'path';
 import { fileURLToPath } from 'url';
 import * as fs from 'fs';
 import { processTimetables } from "../utils/timetableProcessor";
-import * as csv from 'csv-parser';
+import csv from 'csv-parser';
 
 interface AbsentTeacher {
   id: number;
