@@ -6,13 +6,11 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
-    },
-    "updates": {
-      "fallbackToCacheTimeout": 0
     },
     "assetBundlePatterns": [
       "**/*"
@@ -21,16 +19,18 @@
       "supportsTablet": true
     },
     "android": {
-      "package": "com.blackdevil256.restexpress",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#FFFFFF"
-      }
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.blackdevil256.restexpress"
     },
-    "extra": {
-      "eas": {
-        "projectId": "133c7d9b-8e5d-46c5-b777-a9a3bc74b9aa"
-      }
-    }
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-file-system",
+      "expo-secure-store"
+    ]
   }
 }
