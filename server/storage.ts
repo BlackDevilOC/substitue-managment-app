@@ -23,9 +23,46 @@ export class Storage implements IStorage {
 
 
   constructor() {
-    this.dataPath = path.join(__dirname, '../data');
+    // Use local storage for mobile app
+    if (typeof window !== 'undefined') {
+      this.dataPath = 'localStorage';
+    } else {
+      this.dataPath = path.join(__dirname, '../data');
+    }
     this.ensureDataDirectory();
     this.loadCurrentId();
+  }
+
+  private async ensureDataDirectory() {
+    if (this.dataPath === 'localStorage') {
+      return; // No need to create directory for localStorage
+    }
+    if (!fs.existsSync(this.dataPath)) {
+      fs.mkdirSync(this.dataPath, { recursive: true });
+    }
+  }
+
+  private async saveData(filename: string, data: any) {
+    if (this.dataPath === 'localStorage') {
+      localStorage.setItem(filename, JSON.stringify(data));
+      return;
+    }
+    const filePath = this.getFilePath(filename);
+    await fs.promises.writeFile(filePath, JSON.stringify(data, null, 2));
+  }
+
+  private async loadData(filename: string) {
+    try {
+      if (this.dataPath === 'localStorage') {
+        const data = localStorage.getItem(filename);
+        return data ? JSON.parse(data) : [];
+      }
+      const filePath = this.getFilePath(filename);
+      const data = await fs.promises.readFile(filePath, 'utf-8');
+      return JSON.parse(data);
+    } catch (error) {
+      return [];
+    }
   }
 
   private ensureDataDirectory() {

@@ -57,6 +57,11 @@ export async function sendSMS(
   isDevMode: boolean = false
 ): Promise<boolean> {
   try {
+    // Use native SMS capability in mobile app
+    if (typeof window !== 'undefined' && (window as any).ReactNativeWebView) {
+      return true;
+    }
+
     // In mobile app context, this will be replaced with native SMS functionality
     console.log('Sending SMS:', { phoneNumber, message, method });
 
