@@ -1,19 +1,363 @@
+# Teacher Substitution Management System - Technical Documentation
 
-# Teacher Substitution Management System Documentation
+## System Overview
+A comprehensive teacher substitution management system with web and mobile interfaces that handles teacher absences, substitute assignments, and notifications through an automated process.
+
+## Core Data Flow
+1. CSV File Processing
+   - System reads two primary CSV files:
+     - timetable_file.csv: Contains regular class schedules
+     - Substitude_file.csv: Contains substitute teacher information
+   - Files are processed using CSV parser with error handling
+   - Data is normalized and stored in JSON format
+
+2. Teacher Data Processing
+```typescript
+interface Teacher {
+  id: number;
+  name: string;
+  phoneNumber: string | null;
+  isSubstitute: boolean;
+  variations?: string[]; // Different name spellings
+}
+```
+- Name normalization removes titles (Sir, Miss, etc.)
+- Handles multiple name variations using Levenshtein distance
+- Deduplicates teacher entries
+- Stores in total_teacher.json
+
+3. Schedule Management
+```typescript
+interface Schedule {
+  id: number;
+  day: string;
+  period: number;
+  teacherId: number;
+  className: string;
+}
+```
+- Validates day names and period numbers
+- Stores class schedules by day
+- Handles period configurations
+- Maintains teacher-class assignments
+
+4. Absence Handling
+```typescript
+interface Absence {
+  id: number;
+  teacherId: number;
+  date: string;
+  substituteId: number | null;
+  reason?: string;
+  status: 'pending' | 'approved' | 'completed';
+}
+```
+- Records teacher absences
+- Triggers substitute assignment process
+- Maintains absence history
+
+## File Structure and Purpose
+
+### Data Files (data/)
+- absent_teachers.json: Currently absent teachers
+- assigned_teacher.json: Substitute assignments
+- class_schedules.json: Class timetables
+- total_teacher.json: All teacher records
+- period_config.json: Period timing settings
+- sms_history.json: Notification logs
+
+### Server Components (server/)
+1. Main Server (index.ts)
+   - Express.js setup
+   - Route registration
+   - Authentication setup
+   - Initial data loading
+
+2. CSV Handler (csv-handler.ts)
+   - Processes timetable_file.csv
+   - Processes Substitude_file.csv
+   - Validates data format
+   - Normalizes teacher names
+
+3. Storage System (storage.ts)
+   - In-memory data management
+   - File-based persistence
+   - CRUD operations for all entities
+
+4. Substitute Manager (substitute-manager.ts)
+   - Auto-assignment algorithm
+   - Workload balancing
+   - Conflict prevention
+   - Assignment history tracking
+
+### Client Components (client/src/)
+1. Dashboard
+   - Displays absent teachers
+   - Shows today's substitutions
+   - Quick action buttons
+   - Real-time updates
+
+2. Teacher Management
+   - Teacher profiles
+   - Attendance tracking
+   - Schedule viewing
+   - Contact management
+
+3. Substitution Interface
+   - Manual assignment
+   - Auto-assignment triggers
+   - Assignment review
+   - Schedule conflicts
+
+### Mobile App (mobile/src/)
+1. Core Features
+   - Offline capability
+   - Push notifications
+   - Quick attendance marking
+   - Schedule viewing
+
+2. Data Sync
+   - Local SQLite storage
+   - Periodic server sync
+   - Conflict resolution
+   - Cache management
+
+## Database Schema
+
+### Teacher Table
+```sql
+CREATE TABLE teachers (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  phone_number TEXT,
+  is_substitute BOOLEAN,
+  variations TEXT
+);
+```
+
+### Schedule Table
+```sql
+CREATE TABLE schedules (
+  id INTEGER PRIMARY KEY,
+  day TEXT NOT NULL,
+  period INTEGER NOT NULL,
+  teacher_id INTEGER,
+  class_name TEXT,
+  FOREIGN KEY (teacher_id) REFERENCES teachers(id)
+);
+```
+
+### Absence Table
+```sql
+CREATE TABLE absences (
+  id INTEGER PRIMARY KEY,
+  teacher_id INTEGER,
+  date TEXT NOT NULL,
+  substitute_id INTEGER,
+  status TEXT,
+  FOREIGN KEY (teacher_id) REFERENCES teachers(id),
+  FOREIGN KEY (substitute_id) REFERENCES teachers(id)
+);
+```
+
+## API Endpoints
+
+### Authentication
+```typescript
+POST /api/login
+Body: { username: string, password: string }
+Response: { token: string, user: User }
+
+GET /api/user
+Headers: { Authorization: string }
+Response: User
+```
+
+### Teacher Management
+```typescript
+GET /api/teachers
+Response: Teacher[]
+
+POST /api/teachers
+Body: { name: string, phoneNumber?: string, isSubstitute: boolean }
+Response: Teacher
+
+GET /api/teacher-schedule/:teacherId
+Response: Schedule[]
+```
+
+### Absence Management
+```typescript
+POST /api/absences
+Body: { teacherId: number, date: string }
+Response: Absence
+
+GET /api/absences
+Response: Absence[]
+
+POST /api/auto-assign-substitutes
+Response: { assignments: Assignment[], warnings: string[] }
+```
+
+## Data Processing Algorithms
+
+### Teacher Name Normalization
+```typescript
+function normalizeTeacherName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/(sir|miss|mr|ms|mrs|sr|dr)\.?\s*/gi, '')
+    .replace(/[^a-z\s-]/g, '')
+    .trim()
+    .split(/\s+/)
+    .filter(part => part.length > 1)
+    .sort()
+    .join(' ');
+}
+```
+
+### Substitute Assignment Logic
+1. Get absent teachers for the day
+2. Find available substitutes
+3. Check substitute workload
+4. Consider class compatibility
+5. Avoid period conflicts
+6. Assign and notify
+
+### Schedule Processing
+1. Read CSV timetable
+2. Validate day and period
+3. Map teachers to classes
+4. Store in structured format
+5. Handle schedule conflicts
+
+## Implementation Steps
+
+1. Setup Project Structure
+```bash
+mkdir -p server/src client/src mobile/src data
+npm init -y
+```
+
+2. Install Dependencies
+```json
+{
+  "dependencies": {
+    "express": "^4.18.2",
+    "csv-parser": "^3.0.0",
+    "date-fns": "^2.30.0",
+    "react": "^18.2.0",
+    "react-native": "^0.72.0",
+    "typescript": "^5.0.0"
+  }
+}
+```
+
+3. Initialize Database Files
+```bash
+touch data/total_teacher.json
+touch data/absent_teachers.json
+touch data/assigned_teacher.json
+```
+
+4. Configure TypeScript
+```json
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
+  }
+}
+```
+
+5. Start Implementation
+- Set up Express server
+- Create React frontend
+- Implement data processing
+- Add authentication
+- Build mobile app
+
+## Testing Instructions
+
+1. Data Validation
+```bash
+npm run test:data
+```
+Validates CSV files and data structures
+
+2. Substitute Assignment
+```bash
+npm run test:assign
+```
+Tests auto-assignment algorithm
+
+3. API Testing
+```bash
+npm run test:api
+```
+Validates API endpoints
+
+## Deployment Guide
+
+1. Server Setup
+- Port: 5000
+- Host: 0.0.0.0
+- Environment: Production
+
+2. Data Migration
+- Backup CSV files
+- Validate JSON storage
+- Check file permissions
+
+3. Mobile Build
+- Configure environment
+- Build APK/IPA
+- Test offline mode
+
+## Security Considerations
+
+1. Data Protection
+- File permissions
+- Data encryption
+- Secure storage
+
+2. Authentication
+- JWT tokens
+- Session management
+- Password hashing
+
+3. API Security
+- Rate limiting
+- Input validation
+- Error handling
 
 ## Table of Contents
-1. [Introduction](#introduction)
-2. [System Architecture](#system-architecture)
-3. [Features](#features)
-4. [Setup Instructions](#setup-instructions)
-5. [Detailed Component Guide](#detailed-component-guide)
-6. [API Documentation](#api-documentation)
-7. [Mobile App](#mobile-app)
-8. [Data Structures](#data-structures)
-9. [File Organization](#file-organization)
-10. [Development Guide](#development-guide)
-11. [Security Considerations](#security-considerations)
-12. [Troubleshooting](#troubleshooting)
+1. [System Overview](#system-overview)
+2. [Core Data Flow](#core-data-flow)
+3. [File Structure and Purpose](#file-structure-and-purpose)
+4. [Database Schema](#database-schema)
+5. [API Endpoints](#api-endpoints)
+6. [Data Processing Algorithms](#data-processing-algorithms)
+7. [Implementation Steps](#implementation-steps)
+8. [Testing Instructions](#testing-instructions)
+9. [Deployment Guide](#deployment-guide)
+10. [Security Considerations](#security-considerations)
+11. [Introduction](#introduction)
+12. [System Architecture](#system-architecture)
+13. [Features](#features)
+14. [Setup Instructions](#setup-instructions)
+15. [Detailed Component Guide](#detailed-component-guide)
+16. [API Documentation](#api-documentation)
+17. [Mobile App](#mobile-app)
+18. [Data Structures](#data-structures)
+19. [File Organization](#file-organization)
+20. [Development Guide](#development-guide)
+21. [Troubleshooting](#troubleshooting)
+
 
 ## Introduction
 The Teacher Substitution Management System is a comprehensive solution for educational institutions to manage teacher absences and substitute assignments efficiently. It provides real-time tracking, automated assignments, and instant notifications.
