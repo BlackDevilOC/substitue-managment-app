@@ -118,11 +118,9 @@ export default function SmsSendPage() {
 
     if (teacherAssignments.length === 0) return "";
 
-    let msg = "You have been assigned to substitute for:\n\n";
-    teacherAssignments.forEach((assignment: any) => {
-      msg += `- Period ${assignment.period}, Class ${assignment.className}\n`;
-      msg += `  (Original teacher: ${assignment.originalTeacher})\n`;
-    });
+    let msg = teacherAssignments.map((assignment: any) => 
+      `Dear ${teacherName}, you have been assigned to cover ${assignment.className} for ${assignment.originalTeacher}. Please confirm your availability.`
+    ).join("\n\n");
 
     return msg;
   };
