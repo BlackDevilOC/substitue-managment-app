@@ -105,11 +105,26 @@ export class Storage implements IStorage {
 
 
   private async loadUsers(): Promise<User[]> {
-    return (await this.loadData('users.json')) || [];
+    try {
+      if (this.dataPath === 'localStorage') {
+        const data = localStorage.getItem('users.json');
+        return data ? JSON.parse(data) : [];
+      }
+      const filePath = this.getFilePath('users.json');
+      const data = await fs.promises.readFile(filePath, 'utf-8');
+      return JSON.parse(data);
+    } catch (error) {
+      return [];
+    }
   }
 
   private async saveUsers(users: User[]): Promise<void> {
-    await this.saveData('users.json', users);
+    if (this.dataPath === 'localStorage') {
+      localStorage.setItem('users.json', JSON.stringify(users));
+      return;
+    }
+    const filePath = this.getFilePath('users.json');
+    await fs.promises.writeFile(filePath, JSON.stringify(users, null, 2));
   }
 
   private async loadTeachers(): Promise<Teacher[]> {
