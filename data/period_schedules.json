@@ -192,7 +192,7 @@
       },
       {
         "period": 3,
-        "teacherName": "sir jawad ul haq",
+        "teacherName": "sir jawad-ul-haq",
         "className": "8B"
       },
       {
@@ -289,7 +289,7 @@
       },
       {
         "period": 4,
-        "teacherName": "sir jawad ul haq",
+        "teacherName": "sir jawad-ul-haq",
         "className": "7C"
       },
       {
@@ -351,7 +351,7 @@
       },
       {
         "period": 5,
-        "teacherName": "sir jawad ul haq",
+        "teacherName": "sir jawad-ul-haq",
         "className": "8C"
       },
       {
@@ -520,7 +520,7 @@
       },
       {
         "period": 7,
-        "teacherName": "sir jawad ul haq",
+        "teacherName": "sir jawad-ul-haq",
         "className": "7C"
       },
       {
@@ -587,7 +587,7 @@
       },
       {
         "period": 8,
-        "teacherName": "sir jawad ul haq",
+        "teacherName": "sir jawad-ul-haq",
         "className": "7A"
       },
       {
@@ -897,6 +897,11 @@
       },
       {
         "period": 4,
+        "teacherName": "n/a",
+        "className": "7A"
+      },
+      {
+        "period": 4,
         "teacherName": "sir shabeer ahmed",
         "className": "7B"
       },
@@ -964,7 +969,7 @@
       },
       {
         "period": 5,
-        "teacherName": "sir jawad ul haq",
+        "teacherName": "sir jawad-ul-haq",
         "className": "8C"
       },
       {
@@ -1210,7 +1215,7 @@
       },
       {
         "period": 8,
-        "teacherName": "sir jawad ul haq",
+        "teacherName": "sir jawad-ul-haq",
         "className": "7C"
       },
       {
@@ -1423,7 +1428,7 @@
       },
       {
         "period": 3,
-        "teacherName": "sir jawad ul haq",
+        "teacherName": "sir jawad-ul-haq",
         "className": "8B"
       },
       {
@@ -1433,7 +1438,7 @@
       },
       {
         "period": 3,
-        "teacherName": "sir shabeer ahmedb",
+        "teacherName": "sir shabeer ahmed",
         "className": "7A"
       },
       {
@@ -1510,7 +1515,7 @@
       },
       {
         "period": 4,
-        "teacherName": "sir jawad ul haq",
+        "teacherName": "sir jawad-ul-haq",
         "className": "7A"
       },
       {
@@ -1597,7 +1602,7 @@
       },
       {
         "period": 5,
-        "teacherName": "sir jawad ul haq",
+        "teacherName": "sir jawad-ul-haq",
         "className": "7C"
       },
       {
@@ -1659,7 +1664,7 @@
       },
       {
         "period": 6,
-        "teacherName": "sir jawad ul haq",
+        "teacherName": "sir jawad-ul-haq",
         "className": "8C"
       },
       {
@@ -1751,7 +1756,7 @@
       },
       {
         "period": 7,
-        "teacherName": "sir jawad ul haq",
+        "teacherName": "sir jawad-ul-haq",
         "className": "7C"
       },
       {
@@ -2041,7 +2046,7 @@
       },
       {
         "period": 3,
-        "teacherName": "sir jawad ul haq",
+        "teacherName": "sir jawad-ul-haq",
         "className": "8B"
       },
       {
@@ -2068,6 +2073,11 @@
         "period": 3,
         "teacherName": "miss anum hussain",
         "className": "6A"
+      },
+      {
+        "period": 3,
+        "teacherName": "n/a",
+        "className": "6B"
       },
       {
         "period": 3,
@@ -2364,7 +2374,7 @@
       },
       {
         "period": 7,
-        "teacherName": "sir jawad ul haq",
+        "teacherName": "sir jawad-ul-haq",
         "className": "7C"
       },
       {
@@ -2659,7 +2669,7 @@
       },
       {
         "period": 3,
-        "teacherName": "sir jawad ul haq",
+        "teacherName": "sir jawad-ul-haq",
         "className": "8C"
       },
       {
@@ -2741,7 +2751,7 @@
       },
       {
         "period": 4,
-        "teacherName": "sir jawad ul haq",
+        "teacherName": "sir jawad-ul-haq",
         "className": "7A"
       },
       {
@@ -2828,7 +2838,7 @@
       },
       {
         "period": 5,
-        "teacherName": "sir jawad ul haq",
+        "teacherName": "sir jawad-ul-haq",
         "className": "7C"
       },
       {
@@ -3061,7 +3071,7 @@
       },
       {
         "period": 3,
-        "teacherName": "sir jawad ul haq",
+        "teacherName": "sir jawad-ul-haq",
         "className": "7C"
       },
       {
@@ -3138,7 +3148,7 @@
       },
       {
         "period": 4,
-        "teacherName": "sir jawad ul haq",
+        "teacherName": "sir jawad-ul-haq",
         "className": "7C"
       },
       {
@@ -3192,6 +3202,11 @@
         "period": 5,
         "teacherName": "sir abdul sami",
         "className": "8A"
+      },
+      {
+        "period": 5,
+        "teacherName": "n/a",
+        "className": "8B"
       },
       {
         "period": 5,
@@ -3446,7 +3461,7 @@
       },
       {
         "period": 8,
-        "teacherName": "sir irshad ahmed",
+        "teacherName": "sir irshad bhutto",
         "className": "6A"
       },
       {
