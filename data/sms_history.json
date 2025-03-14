@@ -7,5 +7,14 @@
     "method": "api",
     "id": "zknfxpdp0",
     "sentAt": "2025-03-14T14:32:15.041Z"
+  },
+  {
+    "teacherId": "3",
+    "teacherName": "Sir Irshad Qureshi",
+    "message": "Dear Sir Irshad Qureshi, you have been assigned to cover 10B for Sir Bakir Shah. Please confirm your availability.",
+    "status": "failed",
+    "method": "api",
+    "id": "s9iwm91y0",
+    "sentAt": "2025-03-14T14:34:59.270Z"
   }
 ]
