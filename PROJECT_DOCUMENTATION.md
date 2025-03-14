@@ -1,3 +1,14 @@
+# Teacher Substitution Management System Documentation
+
+## AI Recreation Context
+This documentation is structured to enable AI-assisted recreation of the complete application. Key implementation details are organized in a logical flow:
+
+1. System Setup: Dependencies and initial configuration
+2. Core Components: Server, client, and mobile implementations
+3. Data Structures: Schemas and file formats
+4. Integration Points: API endpoints and data flow
+5. Business Logic: Substitution algorithms and processing
+
 # Teacher Substitution Management System - Technical Documentation
 
 ## System Overview
