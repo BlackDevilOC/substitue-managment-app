@@ -118,14 +118,16 @@ export function addSMSToHistory(entry: Omit<SMSHistoryEntry, 'id' | 'sentAt'>) {
 /**
  * Sends SMS using TextBee API
  */
-async function sendSMSViaDevice(phoneNumber: string, message: string): Promise<boolean> {
+async function sendSMSViaAPI(phoneNumber: string, message: string, apiConfig: ApiConfig): Promise<boolean> {
   try {
-    console.log('Attempting to send SMS via device:', {
+    console.log('Attempting to send SMS via TextBee API:', {
       phoneNumber,
-      messageLength: message.length
+      messageLength: message.length,
+      apiName: apiConfig.name,
+      deviceId: apiConfig.deviceId // Log device ID being used
     });
 
-    // Format phone number for consistency
+    // Format phone number: remove '+' and ensure it starts with '92'
     let formattedPhone = phoneNumber.replace('+', '');
     if (formattedPhone.startsWith('0')) {
       formattedPhone = '92' + formattedPhone.substring(1);
