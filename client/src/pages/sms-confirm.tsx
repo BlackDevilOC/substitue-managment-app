@@ -115,29 +115,15 @@ export default function SmsConfirmPage() {
           </CardHeader>
           <CardContent>
             <RadioGroup
-              value={sendMethod}
-              onValueChange={(value) => setSendMethod(value as 'api' | 'mobile' | 'whatsapp')}
+              value="mobile"
+              onValueChange={(value) => setSendMethod('mobile')}
               className="space-y-4"
             >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="api" id="api" />
-                <Label htmlFor="api" className="flex items-center cursor-pointer">
-                  <Globe className="h-4 w-4 mr-2" />
-                  API (Internet Required)
-                </Label>
-              </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="mobile" id="mobile" />
                 <Label htmlFor="mobile" className="flex items-center cursor-pointer">
                   <Phone className="h-4 w-4 mr-2" />
                   Mobile (Carrier Charges)
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="whatsapp" id="whatsapp" />
-                <Label htmlFor="whatsapp" className="flex items-center cursor-pointer">
-                  <MessageSquare className="h-4 w-4 mr-2" />
-                  WhatsApp
                 </Label>
               </div>
             </RadioGroup>
