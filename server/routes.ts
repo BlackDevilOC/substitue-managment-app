@@ -1160,40 +1160,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Record SMS attempts
-  app.post('/api/record-sms', async (req, res) => {
-    try {
-      const { teachers, message, method } = req.body;
-      const timestamp = new Date().toISOString();
-      
-      const smsHistory = teachers.map((teacher: any) => ({
-        teacherId: teacher.id,
-        teacherName: teacher.name,
-        phone: teacher.phone,
-        message,
-        method,
-        timestamp,
-        status: 'sent'
-      }));
-
-      // Load existing history
-      const historyPath = path.join(__dirname, '../data/sms_history.json');
-      let existingHistory = [];
-      if (fs.existsSync(historyPath)) {
-        existingHistory = JSON.parse(fs.readFileSync(historyPath, 'utf-8'));
-      }
-
-      // Add new entries
-      const updatedHistory = [...existingHistory, ...smsHistory];
-      fs.writeFileSync(historyPath, JSON.stringify(updatedHistory, null, 2));
-
-      res.json({ success: true });
-    } catch (error) {
-      console.error('Error recording SMS:', error);
-      res.status(500).json({ error: 'Failed to record SMS history' });
-    }
-  });
-
   const httpServer = createServer(app);
   return httpServer;
 }

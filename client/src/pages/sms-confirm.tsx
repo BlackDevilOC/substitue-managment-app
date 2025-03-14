@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Phone } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { Send, Phone, Globe, MessageSquare } from "lucide-react";
 
 interface Teacher {
   id: string;
@@ -20,9 +22,10 @@ interface LocationState {
 export default function SmsConfirmPage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const [sendMethod, setSendMethod] = useState<'api' | 'mobile' | 'whatsapp'>('api');
   const [loading, setLoading] = useState(false);
 
-  // Parse state from URL query parameters
+  // Parse state from URL query parameters since wouter doesn't support state
   const params = new URLSearchParams(window.location.search);
   const stateParam = params.get('state');
   const state: LocationState = stateParam ? JSON.parse(decodeURIComponent(stateParam)) : { selectedTeachers: [], messageText: '' };
@@ -46,49 +49,54 @@ export default function SmsConfirmPage() {
   };
 
   const handleSendMessages = async () => {
-    try {
-      setLoading(true);
+    // Check if all required phone numbers are filled
+    const missingPhoneNumbers = Object.values(missingPhones).some(phone => !phone);
+    if (missingPhoneNumbers) {
+      toast({
+        title: "Missing Phone Numbers",
+        description: "Please fill in all missing phone numbers before sending.",
+        variant: "destructive"
+      });
+      return;
+    }
 
-      // Update teachers with missing phone numbers
-      const updatedTeachers = selectedTeachers.map(teacher => ({
+    setLoading(true);
+
+    try {
+      // Prepare the data for sending
+      const teachersWithPhones = selectedTeachers.map(teacher => ({
         ...teacher,
         phone: teacher.phone || missingPhones[teacher.id]
       }));
 
-      // Filter out teachers without phone numbers
-      const teachersWithPhones = updatedTeachers.filter(t => t.phone);
-
-      if (teachersWithPhones.length === 0) {
-        throw new Error("No valid phone numbers provided");
-      }
-
-      // Open the default SMS app with the message and numbers
-      const numbers = teachersWithPhones.map(t => t.phone).join(',');
-      window.location.href = `sms:${numbers}?body=${encodeURIComponent(messageText)}`;
-
-      // Record the SMS attempt in history
-      await fetch('/api/record-sms', {
+      const response = await fetch('/api/send-messages', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({
           teachers: teachersWithPhones,
           message: messageText,
-          method: 'mobile'
+          method: sendMethod
         })
       });
 
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+
       toast({
-        title: "SMS App Opened",
-        description: "Continue in your device's SMS application",
+        title: "Success",
+        description: `Messages sent successfully via ${sendMethod.toUpperCase()}`,
       });
 
       // Redirect to SMS history page
       setLocation('/sms-history');
     } catch (error) {
-      console.error('Error processing messages:', error);
+      console.error('Error sending messages:', error);
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to process messages",
+        description: error instanceof Error ? error.message : "Failed to send messages. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -100,45 +108,99 @@ export default function SmsConfirmPage() {
     <div className="container mx-auto py-6 px-4 max-w-2xl">
       <h1 className="text-2xl font-bold mb-6">Confirm SMS Details</h1>
 
-      <Card className="mb-6">
-        <CardContent className="pt-6">
-          <h2 className="text-lg font-semibold mb-4">Recipients ({selectedTeachers.length})</h2>
-          <div className="space-y-4">
-            {selectedTeachers.map(teacher => (
-              <div key={teacher.id} className="flex items-center gap-4">
-                <span className="flex-1">{teacher.name}</span>
-                {teacher.phone ? (
-                  <span className="text-muted-foreground">{teacher.phone}</span>
-                ) : (
-                  <Input
-                    type="tel"
-                    placeholder="Enter phone number"
-                    value={missingPhones[teacher.id]}
-                    onChange={(e) => handlePhoneChange(teacher.id, e.target.value)}
-                    className="w-48"
-                  />
-                )}
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Sending Method</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <RadioGroup
+              value={sendMethod}
+              onValueChange={(value) => setSendMethod(value as 'api' | 'mobile' | 'whatsapp')}
+              className="space-y-4"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="api" id="api" />
+                <Label htmlFor="api" className="flex items-center cursor-pointer">
+                  <Globe className="h-4 w-4 mr-2" />
+                  API (Internet Required)
+                </Label>
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="mobile" id="mobile" />
+                <Label htmlFor="mobile" className="flex items-center cursor-pointer">
+                  <Phone className="h-4 w-4 mr-2" />
+                  Mobile (Carrier Charges)
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="whatsapp" id="whatsapp" />
+                <Label htmlFor="whatsapp" className="flex items-center cursor-pointer">
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  WhatsApp
+                </Label>
+              </div>
+            </RadioGroup>
+          </CardContent>
+        </Card>
 
-      <Card className="mb-6">
-        <CardContent className="pt-6">
-          <h2 className="text-lg font-semibold mb-4">Message</h2>
-          <p className="whitespace-pre-wrap">{messageText}</p>
-        </CardContent>
-      </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Recipients ({selectedTeachers.length})</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {selectedTeachers.map((teacher) => (
+                <div key={teacher.id} className="p-4 bg-muted rounded-lg">
+                  <p className="font-medium">{teacher.name}</p>
+                  {teacher.phone ? (
+                    <p className="text-sm text-muted-foreground mt-1">{teacher.phone}</p>
+                  ) : (
+                    <div className="mt-2">
+                      <Label htmlFor={`phone-${teacher.id}`} className="text-sm text-muted-foreground mb-1">
+                        Enter phone number
+                      </Label>
+                      <Input
+                        id={`phone-${teacher.id}`}
+                        type="tel"
+                        placeholder="+92XXXXXXXXXX"
+                        value={missingPhones[teacher.id]}
+                        onChange={(e) => handlePhoneChange(teacher.id, e.target.value)}
+                        className="max-w-xs"
+                      />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
 
-      <Button
-        className="w-full"
-        onClick={handleSendMessages}
-        disabled={loading}
-      >
-        <Phone className="h-4 w-4 mr-2" />
-        Open SMS App
-      </Button>
+        <Card>
+          <CardHeader>
+            <CardTitle>Message Preview</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="bg-muted p-4 rounded-lg">
+              <p className="whitespace-pre-wrap">{messageText}</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="flex justify-between space-x-4 pt-4">
+          <Button variant="outline" onClick={() => setLocation('/sms-send')}>
+            Back
+          </Button>
+          <Button 
+            onClick={handleSendMessages} 
+            className="min-w-[120px]" 
+            disabled={loading}
+          >
+            <Send className="h-4 w-4 mr-2" />
+            {loading ? 'Sending...' : 'Send Messages'}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }
