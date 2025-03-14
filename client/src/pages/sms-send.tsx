@@ -34,34 +34,6 @@ const messageTemplates = {
       text: "Urgent: We need coverage for {class}. Please respond ASAP if you're available.",
     },
   ],
-  meeting: [
-    {
-      title: "Regular Staff Meeting",
-      text: "Reminder: Staff meeting tomorrow at {time} in {location}. Agenda: {agenda}",
-    },
-    {
-      title: "Emergency Meeting",
-      text: "Emergency staff meeting called for today at {time}. Your attendance is required.",
-    },
-    {
-      title: "Department Meeting",
-      text: "Department meeting scheduled for {date} at {time}. Please prepare {preparation}.",
-    },
-  ],
-  reminder: [
-    {
-      title: "Class Schedule",
-      text: "Reminder: You have {class} scheduled for {period} period tomorrow.",
-    },
-    {
-      title: "Exam Duty",
-      text: "You have been assigned exam duty for {class} on {date} during {period} period.",
-    },
-    {
-      title: "Training Session",
-      text: "Training session scheduled for {date} at {time}. Topic: {topic}",
-    },
-  ],
 };
 
 export default function SmsSendPage() {
@@ -314,8 +286,6 @@ export default function SmsSendPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="assignment">Assignment Notifications</SelectItem>
-                      <SelectItem value="meeting">Staff Meetings</SelectItem>
-                      <SelectItem value="reminder">Class Reminders</SelectItem>
                     </SelectContent>
                   </Select>
 
