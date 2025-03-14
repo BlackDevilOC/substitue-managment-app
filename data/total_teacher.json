@@ -1,12 +1,5 @@
 [
   {
-    "name": "Name",
-    "phone": "Phone Number",
-    "variations": [
-      "Name"
-    ]
-  },
-  {
     "name": "Sir Bakir Shah",
     "phone": "+923156103995",
     "variations": [
@@ -17,7 +10,7 @@
   },
   {
     "name": "Sir Mushtaque Ahmed",
-    "phone": "N/A",
+    "phone": "",
     "variations": [
       "Sir Mushtaque Ahmed",
       "sir mushtaque ahmed",
@@ -105,7 +98,7 @@
   },
   {
     "name": "Sir Abdul Hameed",
-    "phone": "N/A",
+    "phone": "",
     "variations": [
       "Sir Abdul Hameed",
       "sir abdul hameed"
@@ -161,7 +154,7 @@
   },
   {
     "name": "Sir Anwar Ali",
-    "phone": "N/A",
+    "phone": "",
     "variations": [
       "Sir Anwar Ali",
       "sir anwar ali",
@@ -255,16 +248,16 @@
     ]
   },
   {
-    "name": "Sir Rafaqat Maseeh",
+    "name": "Sir Rafaqat Masseh",
     "phone": "+923023661737",
     "variations": [
-      "Sir Rafaqat Maseeh",
+      "Sir Rafaqat Masseh",
       "sir rafaqat maseeh"
     ]
   },
   {
     "name": "Sir Wajiudin Shaikh",
-    "phone": "N/A",
+    "phone": "",
     "variations": [
       "Sir Wajiudin Shaikh",
       "sir wajiudin",

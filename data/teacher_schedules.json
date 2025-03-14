@@ -2282,11 +2282,6 @@
     },
     {
       "day": "wednesday",
-      "period": 3,
-      "className": "7A"
-    },
-    {
-      "day": "wednesday",
       "period": 5,
       "className": "7B"
     },
@@ -2538,11 +2533,6 @@
       "day": "saturday",
       "period": 6,
       "className": "8A"
-    },
-    {
-      "day": "saturday",
-      "period": 8,
-      "className": "6A"
     }
   ],
   "miss anum hussain": [
@@ -2928,7 +2918,7 @@
       "className": "9B"
     }
   ],
-  "sir jawad-ul-haq": [
+  "sir jawad ul haq": [
     {
       "day": "monday",
       "period": 3,
@@ -3221,6 +3211,13 @@
       "className": "8A"
     }
   ],
+  "sir shabeer ahmedb": [
+    {
+      "day": "wednesday",
+      "period": 3,
+      "className": "7A"
+    }
+  ],
   "sir shoaib": [
     {
       "day": "monday",
@@ -3306,23 +3303,6 @@
       "day": "saturday",
       "period": 8,
       "className": "6C"
-    }
-  ],
-  "n/a": [
-    {
-      "day": "tuesday",
-      "period": 4,
-      "className": "7A"
-    },
-    {
-      "day": "thursday",
-      "period": 3,
-      "className": "6B"
-    },
-    {
-      "day": "saturday",
-      "period": 5,
-      "className": "8B"
     }
   ],
   "sir farhan siddiqui": [
@@ -3442,6 +3422,13 @@
       "day": "saturday",
       "period": 8,
       "className": "7A"
+    }
+  ],
+  "sir irshad ahmed": [
+    {
+      "day": "saturday",
+      "period": 8,
+      "className": "6A"
     }
   ]
 }
