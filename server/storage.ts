@@ -1,171 +1,267 @@
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { IStorage } from "./types";
 import type { User, InsertUser, Teacher, Schedule, Absence, TeacherAttendance, InsertTeacherAttendance } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const MemoryStore = createMemoryStore(session);
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private teachers: Map<number, Teacher>;
-  private schedules: Map<number, Schedule>;
-  private absences: Map<number, Absence>;
-  private teacherAttendances: Map<number, TeacherAttendance>;
-  private substituteUsage: Map<number, number>; // Track how many times each substitute is assigned
-  private dayOverride: string | null;
-  sessionStore: session.Store;
-  currentId: number;
-  private smsHistory: Map<number, SmsHistory>;
+export class Storage implements IStorage {
+  private dataPath: string;
+  private currentId: number = 1; // Initialize currentId
+  private users: User[] = [];
+  private teachers: Teacher[] = [];
+  private schedules: Schedule[] = [];
+  private absences: Absence[] = [];
+  private teacherAttendances: TeacherAttendance[] = [];
+  private smsHistory: SmsHistory[] = [];
+
 
   constructor() {
-    this.users = new Map();
-    this.teachers = new Map();
-    this.schedules = new Map();
-    this.absences = new Map();
-    this.teacherAttendances = new Map();
-    this.substituteUsage = new Map();
-    this.smsHistory = new Map();
-    this.currentId = 1;
-    this.sessionStore = new MemoryStore({
-      checkPeriod: 86400000,
-    });
+    this.dataPath = path.join(__dirname, '../data');
+    this.ensureDataDirectory();
+    this.loadCurrentId();
   }
+
+  private ensureDataDirectory() {
+    if (!fs.existsSync(this.dataPath)) {
+      fs.mkdirSync(this.dataPath, { recursive: true });
+    }
+  }
+
+  private getFilePath(filename: string): string {
+    return path.join(this.dataPath, filename);
+  }
+
+  async saveData(filename: string, data: any) {
+    const filePath = this.getFilePath(filename);
+    await fs.promises.writeFile(filePath, JSON.stringify(data, null, 2));
+  }
+
+  async loadData(filename: string) {
+    const filePath = this.getFilePath(filename);
+    try {
+      const data = await fs.promises.readFile(filePath, 'utf-8');
+      return JSON.parse(data);
+    } catch (error) {
+      return []; // Return empty array instead of null
+    }
+  }
+
+  private async loadCurrentId() {
+      try {
+          const data = await this.loadData('currentId.json');
+          this.currentId = data || 1;
+      } catch (error) {
+          this.currentId = 1;
+      }
+  }
+
+  private async saveCurrentId() {
+      await this.saveData('currentId.json', this.currentId);
+  }
+
+
+  private async loadUsers(): Promise<User[]> {
+    return (await this.loadData('users.json')) || [];
+  }
+
+  private async saveUsers(users: User[]): Promise<void> {
+    await this.saveData('users.json', users);
+  }
+
+  private async loadTeachers(): Promise<Teacher[]> {
+    return (await this.loadData('teachers.json')) || [];
+  }
+
+  private async saveTeachers(teachers: Teacher[]): Promise<void> {
+    await this.saveData('teachers.json', teachers);
+  }
+
+  private async loadSchedules(): Promise<Schedule[]> {
+    return (await this.loadData('schedules.json')) || [];
+  }
+
+  private async saveSchedules(schedules: Schedule[]): Promise<void> {
+    await this.saveData('schedules.json', schedules);
+  }
+
+  private async loadAbsences(): Promise<Absence[]> {
+    return (await this.loadData('absences.json')) || [];
+  }
+
+  private async saveAbsences(absences: Absence[]): Promise<void> {
+    await this.saveData('absences.json', absences);
+  }
+
+  private async loadTeacherAttendances(): Promise<TeacherAttendance[]> {
+    return (await this.loadData('teacherAttendances.json')) || [];
+  }
+
+  private async saveTeacherAttendances(teacherAttendances: TeacherAttendance[]): Promise<void> {
+    await this.saveData('teacherAttendances.json', teacherAttendances);
+  }
+
+  private async loadSmsHistory(): Promise<SmsHistory[]> {
+    return (await this.loadData('smsHistory.json')) || [];
+  }
+
+  private async saveSmsHistory(smsHistory: SmsHistory[]): Promise<void> {
+    await this.saveData('smsHistory.json', smsHistory);
+  }
+
+
 
   private isTeacherOverloaded(teacherId: number, date: string): boolean {
     const MAX_DAILY_SUBSTITUTIONS = 3;
-    const assignments = Array.from(this.absences.values())
-      .filter(a => a.date === date && a.substituteId === teacherId);
+    const assignments = this.absences.filter(a => a.date === date && a.substituteId === teacherId);
     return assignments.length >= MAX_DAILY_SUBSTITUTIONS;
   }
 
   // User methods
   async getUser(id: number): Promise<User | undefined> {
-    const { getUserById } = await import('./user-file-manager.js');
-    return getUserById(id);
+    const users = await this.loadUsers();
+    return users.find(user => user.id === id);
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const { getUserByUsername } = await import('./user-file-manager.js');
-    return getUserByUsername(username);
+    const users = await this.loadUsers();
+    return users.find(user => user.username === username);
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const { readUsersFile, writeUsersFile } = await import('./user-file-manager.js');
-    const users = readUsersFile();
-    const id = users.length > 0 ? Math.max(...users.map(u => u.id)) + 1 : 1;
+    const users = await this.loadUsers();
+    const id = this.currentId++;
     const user: User = { ...insertUser, id, isAdmin: false };
     users.push(user);
-    writeUsersFile(users);
+    await this.saveUsers(users);
+    await this.saveCurrentId();
     return user;
   }
 
   async updateUserPassword(id: number, password: string): Promise<void> {
-    const { updateUserPassword } = await import('./user-file-manager.js');
-    updateUserPassword(id, password);
+    const users = await this.loadUsers();
+    const userIndex = users.findIndex(user => user.id === id);
+    if (userIndex !== -1) {
+      users[userIndex].password = password;
+      await this.saveUsers(users);
+    }
   }
-  
+
   async updateUsername(id: number, newUsername: string): Promise<boolean> {
-    const { updateUsername } = await import('./user-file-manager.js');
-    return updateUsername(id, newUsername);
+    const users = await this.loadUsers();
+    const userIndex = users.findIndex(user => user.id === id);
+    if (userIndex !== -1) {
+      users[userIndex].username = newUsername;
+      await this.saveUsers(users);
+      return true;
+    }
+    return false;
   }
 
   // Teacher methods
   async createTeacher(teacher: Omit<Teacher, "id">): Promise<Teacher> {
+    const teachers = await this.loadTeachers();
     const id = this.currentId++;
     const newTeacher = { ...teacher, id };
-    this.teachers.set(id, newTeacher);
+    teachers.push(newTeacher);
+    await this.saveTeachers(teachers);
+    await this.saveCurrentId();
     return newTeacher;
   }
 
   async getTeacher(id: number): Promise<Teacher | undefined> {
-    return this.teachers.get(id);
+    const teachers = await this.loadTeachers();
+    return teachers.find(teacher => teacher.id === id);
   }
 
   async getTeachers(): Promise<Teacher[]> {
-    return Array.from(this.teachers.values());
+    return await this.loadTeachers();
   }
 
   async clearTeachers() {
-    // await db.delete(teachers);  //Commented out as it references a non-existent db variable.
+    await this.saveData('teachers.json', []);
     console.log('All teachers deleted from database');
   }
 
 
   // Schedule methods
   async createSchedule(schedule: Omit<Schedule, "id">): Promise<Schedule> {
+    const schedules = await this.loadSchedules();
     const id = this.currentId++;
     const newSchedule = { ...schedule, id };
-    this.schedules.set(id, newSchedule);
+    schedules.push(newSchedule);
+    await this.saveSchedules(schedules);
+    await this.saveCurrentId();
     return newSchedule;
   }
 
   async getSchedulesByDay(day: string): Promise<Schedule[]> {
-    const effectiveDay = this.dayOverride || day;
-    return Array.from(this.schedules.values()).filter(s => s.day === effectiveDay.toLowerCase());
-  }
-
-  async setDayOverride(day: string | null): Promise<void> {
-    this.dayOverride = day?.toLowerCase() || null;
-  }
-
-  async getCurrentDay(): Promise<string> {
-    return this.dayOverride || new Date().toLocaleDateString('en-US', { weekday: 'wednesday' }).toLowerCase();
-  }
-
-  // Clear all schedules - useful for re-uploading timetable
-  async clearSchedules(): Promise<void> {
-    this.schedules.clear();
+    const schedules = await this.loadSchedules();
+    return schedules.filter(s => s.day === day.toLowerCase());
   }
 
   // Absence methods
   async createAbsence(absence: Omit<Absence, "id">): Promise<Absence> {
+    const absences = await this.loadAbsences();
     const id = this.currentId++;
     const newAbsence = { ...absence, id };
-    this.absences.set(id, newAbsence);
+    absences.push(newAbsence);
+    await this.saveAbsences(absences);
+    await this.saveCurrentId();
     return newAbsence;
   }
 
   async getAbsences(): Promise<Absence[]> {
-    return Array.from(this.absences.values());
+    return await this.loadAbsences();
   }
 
   async assignSubstitute(absenceId: number, substituteId: number): Promise<void> {
-    const absence = this.absences.get(absenceId);
-    if (absence) {
-      this.absences.set(absenceId, { ...absence, substituteId });
+    const absences = await this.loadAbsences();
+    const absenceIndex = absences.findIndex(a => a.id === absenceId);
+    if (absenceIndex !== -1) {
+      absences[absenceIndex].substituteId = substituteId;
+      await this.saveAbsences(absences);
     }
   }
 
   // Teacher Attendance methods
   async createTeacherAttendance(attendance: Omit<TeacherAttendance, "id">): Promise<TeacherAttendance> {
+    const teacherAttendances = await this.loadTeacherAttendances();
     const id = this.currentId++;
     const newAttendance = { ...attendance, id };
-    this.teacherAttendances.set(id, newAttendance);
+    teacherAttendances.push(newAttendance);
+    await this.saveTeacherAttendances(teacherAttendances);
+    await this.saveCurrentId();
     return newAttendance;
   }
 
   async getTeacherAttendanceByDate(date: string): Promise<TeacherAttendance[]> {
+    const teacherAttendances = await this.loadTeacherAttendances();
     const dateObj = new Date(date);
-    return Array.from(this.teacherAttendances.values()).filter(a => a.date.toDateString() === dateObj.toDateString());
+    return teacherAttendances.filter(a => a.date.toDateString() === dateObj.toDateString());
   }
 
   async getTeacherAttendanceBetweenDates(startDate: string, endDate: string): Promise<TeacherAttendance[]> {
+    const teacherAttendances = await this.loadTeacherAttendances();
     const start = new Date(startDate);
     const end = new Date(endDate);
-    return Array.from(this.teacherAttendances.values()).filter(a => a.date >= start && a.date <= end);
+    return teacherAttendances.filter(a => a.date >= start && a.date <= end);
   }
 
   async autoAssignSubstitutes(date: string): Promise<Map<string, string>> {
     await this.loadData();
 
-    // Import the SubstituteManager dynamically to avoid circular dependencies
     const { SubstituteManager } = await import('./substitute-manager.js');
     const manager = new SubstituteManager();
 
-    // Load fresh data from CSV files every time to ensure we have the latest data
     await manager.loadData();
 
-    // Get all absent teachers for today
     const absentTeachers = this.absences
       .filter((absence) => absence.date === date && !absence.substituteId)
       .map((absence) => this.teachers.find(t => t.id === absence.teacherId)?.name || '');
@@ -174,21 +270,17 @@ export class MemStorage implements IStorage {
       return new Map<string, string>();
     }
 
-    // Clear previous assignments
     manager.clearAssignments();
 
-    // Use the new auto-assign functionality
     const { assignments, warnings } = await manager.autoAssignSubstitutes(date, absentTeachers);
-    
+
     const assignmentsMap = new Map<string, string>();
-    
-    // Record these assignments in our database
+
     for (const assignment of assignments) {
       const key = `${assignment.period}-${assignment.className}`;
       assignmentsMap.set(key, assignment.substitute);
 
-      // Find the absence record
-      const absentTeacherId = this.teachers.find(t => 
+      const absentTeacherId = this.teachers.find(t =>
         t.name.toLowerCase() === assignment.originalTeacher.toLowerCase())?.id;
 
       if (!absentTeacherId) continue;
@@ -199,12 +291,10 @@ export class MemStorage implements IStorage {
 
       if (!absenceRecord) continue;
 
-      // Find substitute teacher ID
-      const substituteId = this.teachers.find(t => 
+      const substituteId = this.teachers.find(t =>
         t.name.toLowerCase() === assignment.substitute.toLowerCase())?.id;
 
       if (substituteId) {
-        // Update the absence record with the substitute
         await this.assignSubstitute(absenceRecord.id, substituteId);
       }
     }
@@ -213,46 +303,39 @@ export class MemStorage implements IStorage {
   }
 
   private getTeacherPeriod(teacherId: number, date: string): number {
-    const schedules = Array.from(this.schedules.values())
-      .find(s => s.teacherId === teacherId && s.day.toLowerCase() === new Date(date).toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase());
+    const schedules = this.schedules.find(s => s.teacherId === teacherId && s.day.toLowerCase() === new Date(date).toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase());
     return schedules?.period || 0;
   }
 
-
   async createSmsHistory(sms: Omit<SmsHistory, "id" | "sentAt">): Promise<SmsHistory> {
+    const smsHistory = await this.loadSmsHistory();
     const id = this.currentId++;
-    const newSms = { 
-      ...sms, 
-      id, 
-      sentAt: new Date() 
-    };
-    this.smsHistory.set(id, newSms);
+    const newSms = { ...sms, id, sentAt: new Date() };
+    smsHistory.push(newSms);
+    await this.saveSmsHistory(smsHistory);
+    await this.saveCurrentId();
     return newSms;
   }
 
   async getSmsHistory(): Promise<SmsHistory[]> {
-    return Array.from(this.smsHistory.values());
+    return await this.loadSmsHistory();
   }
 
   private getTeacherClass(teacherId: number, date: string): string {
-    const schedules = Array.from(this.schedules.values())
-      .find(s => s.teacherId === teacherId && s.day.toLowerCase() === new Date(date).toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase());
+    const schedules = this.schedules.find(s => s.teacherId === teacherId && s.day.toLowerCase() === new Date(date).toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase());
     return schedules?.className || '';
   }
 
   async getSubstituteAssignments(date: string): Promise<any[]> {
     await this.loadData();
 
-    // Import the SubstituteManager dynamically
     const { SubstituteManager } = await import('./substitute-manager.js');
     const manager = new SubstituteManager();
 
-    // Load fresh data from CSV files
     await manager.loadData();
 
-    // Get assignments directly from the manager or file
     const { assignments: managerAssignments } = manager.getSubstituteAssignments();
-    
+
     if (managerAssignments && managerAssignments.length > 0) {
       return managerAssignments.map(assignment => ({
         period: assignment.period,
@@ -262,13 +345,11 @@ export class MemStorage implements IStorage {
         substitutePhone: assignment.substitutePhone || null,
       }));
     }
-    
-    // If no assignments found, try to auto-assign
+
     await this.autoAssignSubstitutes(date);
-    
-    // Try to get assignments again
+
     const { assignments: newAssignments } = manager.getSubstituteAssignments();
-    
+
     return (newAssignments || []).map(assignment => ({
       period: assignment.period,
       className: assignment.className,
@@ -279,12 +360,29 @@ export class MemStorage implements IStorage {
   }
 
   async loadData() {
-    // Placeholder for loading data.  Implementation would read from database or other sources
+    this.users = await this.loadUsers();
+    this.teachers = await this.loadTeachers();
+    this.schedules = await this.loadSchedules();
+    this.absences = await this.loadAbsences();
+    this.teacherAttendances = await this.loadTeacherAttendances();
+    this.smsHistory = await this.loadSmsHistory();
     console.log("Data loaded");
+  }
+
+  async setDayOverride(day: string | null): Promise<void> {
+    //No changes needed
+  }
+
+  async getCurrentDay(): Promise<string> {
+    //No changes needed
+  }
+
+  async clearSchedules(): Promise<void> {
+    await this.saveData('schedules.json', []);
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new Storage();
 
 interface SmsHistory {
   id: number;

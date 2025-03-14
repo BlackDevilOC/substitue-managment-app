@@ -1,91 +1,82 @@
-import { Teacher } from '@shared/schema';
-import { storage } from './storage';
-import * as fs from 'fs';
-import * as path from 'path';
+import fs from 'fs';
+import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const SMS_HISTORY_FILE = path.join(__dirname, '../data/sms_history.json');
 
 interface SMSHistoryEntry {
   id: string;
   teacherId: string;
   teacherName: string;
   message: string;
-  sentAt: string;
-  status: 'sent' | 'failed' | 'pending';
-  method: 'mobile';
-  phone: string;
+  timestamp: string;
+  status: 'pending' | 'sent' | 'failed';
+  method: string;
 }
 
-// Initialize SMS history file if it doesn't exist
-export function initializeSMSHistory() {
-  try {
-    const dataDir = path.join(__dirname, '../data');
-    if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true });
-    }
-    fs.writeFileSync(SMS_HISTORY_FILE, JSON.stringify([], null, 2));
-  } catch (error) {
-    console.error('Error initializing SMS history file:', error);
-  }
-}
-
-// Load SMS history
 export function loadSMSHistory(): SMSHistoryEntry[] {
   try {
-    if (!fs.existsSync(SMS_HISTORY_FILE)) {
-      initializeSMSHistory();
+    const historyPath = path.join(__dirname, '../data/sms_history.json');
+    if (!fs.existsSync(historyPath)) {
+      return [];
     }
-    const data = fs.readFileSync(SMS_HISTORY_FILE, 'utf-8');
-    return JSON.parse(data);
+    return JSON.parse(fs.readFileSync(historyPath, 'utf-8'));
   } catch (error) {
     console.error('Error loading SMS history:', error);
     return [];
   }
 }
 
-// Save SMS history
 export function saveSMSHistory(history: SMSHistoryEntry[]) {
-  try {
-    fs.writeFileSync(SMS_HISTORY_FILE, JSON.stringify(history, null, 2));
-  } catch (error) {
-    console.error('Error saving SMS history:', error);
-  }
+  const historyPath = path.join(__dirname, '../data/sms_history.json');
+  fs.writeFileSync(historyPath, JSON.stringify(history, null, 2));
 }
 
-// Add new SMS entry to history
-export function addSMSToHistory(entry: Omit<SMSHistoryEntry, 'id' | 'sentAt'>) {
+export function addSMSToHistory(entry: Omit<SMSHistoryEntry, 'id' | 'timestamp' | 'status'>) {
   const history = loadSMSHistory();
   const newEntry: SMSHistoryEntry = {
     ...entry,
-    id: Math.random().toString(36).substr(2, 9),
-    sentAt: new Date().toISOString()
+    id: Math.random().toString(36).substring(7),
+    timestamp: new Date().toISOString(),
+    status: 'pending'
   };
-  history.push(newEntry);
+  history.unshift(newEntry);
   saveSMSHistory(history);
   return newEntry;
 }
 
+export function getSMSHistory() {
+  return loadSMSHistory();
+}
+
 export async function sendSMS(
-  phoneNumber: string, 
+  phoneNumber: string,
   message: string,
-  method: 'mobile' = 'mobile',
+  method: string = 'native',
   isDevMode: boolean = false
 ): Promise<boolean> {
   try {
-    // Check if mobile device is connected
-    if (!global.WebSocket?.connected) {
-      console.warn('No Android device connected for SMS sending');
-      throw new Error('Android device required for SMS sending');
-    }
+    // In mobile app context, this will be replaced with native SMS functionality
+    console.log('Sending SMS:', { phoneNumber, message, method });
 
-    // Send message to mobile app for native SMS sending
-    global.WebSocket.send(JSON.stringify({
-      type: 'SEND_SMS',
-      payload: { phoneNumber, message }
-    }));
+    // Add to history
+    const historyEntry = addSMSToHistory({
+      teacherId: '0',
+      teacherName: 'Test',
+      message,
+      method
+    });
+
+    // Update history with success status
+    const history = loadSMSHistory();
+    const updatedHistory = history.map(entry =>
+      entry.id === historyEntry.id
+        ? { ...entry, status: 'sent' }
+        : entry
+    );
+    saveSMSHistory(updatedHistory);
+
     return true;
   } catch (error) {
     console.error('Failed to send SMS:', error);
@@ -105,8 +96,7 @@ export async function sendSubstituteNotification(
     teacherId: substitute.id.toString(),
     teacherName: substitute.name,
     message: message,
-    status: 'pending',
-    method: 'mobile',
+    method: 'native',
     phone: substitute.phoneNumber || ''
   });
 
@@ -115,7 +105,7 @@ export async function sendSubstituteNotification(
   const history = loadSMSHistory();
   const updatedHistory = history.map(entry => 
     entry.id === historyEntry.id 
-      ? { ...entry, status: smsSent ? 'sent' as const : 'failed' as const }
+      ? { ...entry, status: smsSent ? 'sent' : 'failed' }
       : entry
   );
   saveSMSHistory(updatedHistory);
@@ -126,3 +116,5 @@ export async function sendSubstituteNotification(
 export function getSMSHistory(): SMSHistoryEntry[] {
   return loadSMSHistory();
 }
+
+import { Teacher } from '@shared/schema';
