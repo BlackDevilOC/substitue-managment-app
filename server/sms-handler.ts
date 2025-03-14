@@ -75,13 +75,17 @@ export async function sendSMS(
   isDevMode: boolean = false
 ): Promise<boolean> {
   try {
-    // Send message to mobile app for native SMS sending
-    if (global.WebSocket) {
-      global.WebSocket.send(JSON.stringify({
-        type: 'SEND_SMS',
-        payload: { phoneNumber, message }
-      }));
+    // Check if mobile device is connected
+    if (!global.WebSocket?.connected) {
+      console.warn('No Android device connected for SMS sending');
+      throw new Error('Android device required for SMS sending');
     }
+
+    // Send message to mobile app for native SMS sending
+    global.WebSocket.send(JSON.stringify({
+      type: 'SEND_SMS',
+      payload: { phoneNumber, message }
+    }));
     return true;
   } catch (error) {
     console.error('Failed to send SMS:', error);
