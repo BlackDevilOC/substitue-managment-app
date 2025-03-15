@@ -5,6 +5,10 @@ import themePlugin from "@replit/vite-plugin-shadcn-theme-json";
 import { cartographer } from "@replit/vite-plugin-cartographer";
 import runtimeErrorModal from "@replit/vite-plugin-runtime-error-modal";
 import path from "path";
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export default defineConfig({
   plugins: [react(), themePlugin(), cartographer(), runtimeErrorModal()],
