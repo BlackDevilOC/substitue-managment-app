@@ -2,7 +2,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import themePlugin from "@replit/vite-plugin-shadcn-theme-json";
-import cartographer from "@replit/vite-plugin-cartographer";
+import { cartographer } from "@replit/vite-plugin-cartographer";
 import runtimeErrorModal from "@replit/vite-plugin-runtime-error-modal";
 import path from "path";
 
