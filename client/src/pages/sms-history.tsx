@@ -6,28 +6,41 @@ import { MessageSquare, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { queryClient } from '@/lib/queryClient';
 
+interface SMSHistoryEntry {
+  id: string;
+  teacherId: string;
+  teacherName: string;
+  message: string;
+  sentAt: string;
+  status: 'pending' | 'sent' | 'failed';
+  method: string;
+}
+
 export default function SmsHistoryPage() {
   const { toast } = useToast();
 
-  const { data: smsHistory, isLoading } = useQuery({
+  const { data: smsHistory, isLoading, error } = useQuery<SMSHistoryEntry[]>({
     queryKey: ['smsHistory'],
     queryFn: async () => {
       const res = await fetch('/api/sms-history');
-      if (!res.ok) throw new Error('Failed to fetch SMS history');
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to fetch SMS history');
+      }
       return res.json();
-    }
+    },
+    retry: 1
   });
 
   const resendMutation = useMutation({
-    mutationFn: async (sms: any) => {
+    mutationFn: async (sms: SMSHistoryEntry) => {
       const res = await fetch('/api/send-messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           teachers: [{
             id: sms.teacherId,
-            name: sms.teacherName,
-            phone: sms.phone
+            name: sms.teacherName
           }],
           message: sms.message,
           method: sms.method || 'api'
@@ -43,10 +56,10 @@ export default function SmsHistoryPage() {
         description: "Message has been resent successfully.",
       });
     },
-    onError: () => {
+    onError: (error) => {
       toast({
         title: "Failed to Resend",
-        description: "Could not resend the message. Please try again.",
+        description: error instanceof Error ? error.message : "Could not resend the message. Please try again.",
         variant: "destructive"
       });
     }
@@ -65,18 +78,31 @@ export default function SmsHistoryPage() {
     );
   }
 
+  if (error) {
+    return (
+      <div className="container py-6">
+        <h1 className="text-2xl font-bold mb-6">SMS History</h1>
+        <Card>
+          <CardContent className="py-8 text-center text-red-500">
+            Error loading SMS history: {error instanceof Error ? error.message : 'Unknown error'}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="container max-w-4xl mx-auto py-6 px-4">
       <h1 className="text-2xl font-bold mb-6">SMS History</h1>
       <div className="grid gap-4">
-        {smsHistory?.length === 0 ? (
+        {!smsHistory || smsHistory.length === 0 ? (
           <Card>
             <CardContent className="py-8 text-center text-muted-foreground">
               No SMS history found
             </CardContent>
           </Card>
         ) : (
-          smsHistory?.map((sms: any) => (
+          smsHistory.map((sms) => (
             <Card key={sms.id} className="hover:shadow-md transition-shadow">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-lg">

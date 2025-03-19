@@ -1,18 +1,37 @@
-import fs from 'fs';
-import path from 'path';
+import * as fs from 'fs';
+import * as path from 'path';
 import { fileURLToPath } from 'url';
+import { SMSHistoryEntry } from './types/substitute';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-interface SMSHistoryEntry {
-  id: string;
-  teacherId: string;
-  teacherName: string;
-  message: string;
-  timestamp: string;
-  status: 'pending' | 'sent' | 'failed';
-  method: string;
+export async function sendSMS(phoneNumber: string, message: string, method: string = 'native'): Promise<boolean> {
+  try {
+    // Create SMS deep link for native SMS app
+    const encodedMessage = encodeURIComponent(message);
+    const smsLink = `sms:${phoneNumber}?body=${encodedMessage}`;
+
+    // Add to history
+    addSMSToHistory({
+      teacherId: phoneNumber,
+      teacherName: phoneNumber, // Using phone number as name for history
+      message,
+      status: 'pending',
+      method: 'native'
+    });
+
+    // Return the SMS link that will be used by the frontend
+    return true;
+  } catch (error) {
+    console.error('Error preparing SMS:', error);
+    return false;
+  }
+}
+
+export function getSMSLink(phoneNumber: string, message: string): string {
+  const encodedMessage = encodeURIComponent(message);
+  return `sms:${phoneNumber}?body=${encodedMessage}`;
 }
 
 export function loadSMSHistory(): SMSHistoryEntry[] {
@@ -21,101 +40,43 @@ export function loadSMSHistory(): SMSHistoryEntry[] {
     if (!fs.existsSync(historyPath)) {
       return [];
     }
-    return JSON.parse(fs.readFileSync(historyPath, 'utf-8'));
+    const history = JSON.parse(fs.readFileSync(historyPath, 'utf-8'));
+    // Convert any timestamp fields to sentAt for consistency
+    return history.map((entry: any) => ({
+      ...entry,
+      sentAt: entry.sentAt || entry.timestamp
+    }));
   } catch (error) {
     console.error('Error loading SMS history:', error);
     return [];
   }
 }
 
-export function saveSMSHistory(history: SMSHistoryEntry[]) {
-  const historyPath = path.join(__dirname, '../data/sms_history.json');
-  fs.writeFileSync(historyPath, JSON.stringify(history, null, 2));
-}
-
-export function addSMSToHistory(entry: Omit<SMSHistoryEntry, 'id' | 'timestamp' | 'status'>) {
+export function addSMSToHistory(entry: Omit<SMSHistoryEntry, 'id' | 'sentAt'>): SMSHistoryEntry {
   const history = loadSMSHistory();
   const newEntry: SMSHistoryEntry = {
-    ...entry,
-    id: Math.random().toString(36).substring(7),
-    timestamp: new Date().toISOString(),
-    status: 'pending'
+    id: `sms-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+    sentAt: new Date().toISOString(),
+    ...entry
   };
-  history.unshift(newEntry);
+  
+  history.push(newEntry);
   saveSMSHistory(history);
   return newEntry;
 }
 
-export function getSMSHistory() {
-  return loadSMSHistory();
-}
-
-export async function sendSMS(
-  phoneNumber: string,
-  message: string,
-  method: string = 'native',
-  isDevMode: boolean = false
-): Promise<boolean> {
+export function saveSMSHistory(history: SMSHistoryEntry[]): void {
   try {
-    // Use native SMS capability in mobile app
-    if (typeof window !== 'undefined' && (window as any).ReactNativeWebView) {
-      return true;
-    }
-
-    // In mobile app context, this will be replaced with native SMS functionality
-    console.log('Sending SMS:', { phoneNumber, message, method });
-
-    // Add to history
-    const historyEntry = addSMSToHistory({
-      teacherId: '0',
-      teacherName: 'Test',
-      message,
-      method
-    });
-
-    // Update history with success status
-    const history = loadSMSHistory();
-    const updatedHistory = history.map(entry =>
-      entry.id === historyEntry.id
-        ? { ...entry, status: 'sent' }
-        : entry
-    );
-    saveSMSHistory(updatedHistory);
-
-    return true;
+    const historyPath = path.join(__dirname, '../data/sms_history.json');
+    // Ensure all entries use sentAt instead of timestamp
+    const updatedHistory = history.map(entry => ({
+      ...entry,
+      sentAt: entry.sentAt || entry.timestamp
+    }));
+    fs.writeFileSync(historyPath, JSON.stringify(updatedHistory, null, 2));
   } catch (error) {
-    console.error('Failed to send SMS:', error);
-    return false;
+    console.error('Error saving SMS history:', error);
   }
-}
-
-export async function sendSubstituteNotification(
-  substitute: Teacher,
-  assignments: {day: string; period: number; className: string; originalTeacher: string}[]
-) {
-  const message = assignments.map(assignment => 
-    `Dear ${substitute.name}, you have been assigned to cover ${assignment.className} for ${assignment.originalTeacher}. Please confirm your availability.`
-  ).join('\n\n');
-
-  const historyEntry = addSMSToHistory({
-    teacherId: substitute.id.toString(),
-    teacherName: substitute.name,
-    message: message,
-    method: 'native',
-    phone: substitute.phoneNumber || ''
-  });
-
-  const smsSent = await sendSMS(substitute.phoneNumber || '', message);
-
-  const history = loadSMSHistory();
-  const updatedHistory = history.map(entry => 
-    entry.id === historyEntry.id 
-      ? { ...entry, status: smsSent ? 'sent' : 'failed' }
-      : entry
-  );
-  saveSMSHistory(updatedHistory);
-
-  return message;
 }
 
 export function getSMSHistory(): SMSHistoryEntry[] {

@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertTeacherSchema, insertScheduleSchema, insertAbsenceSchema } from "@shared/schema";
+import { insertTeacherSchema, insertScheduleSchema, insertAbsenceSchema } from "../src/schema";
 import { processTimetableCSV, processSubstituteCSV } from "./csv-handler";
 import { processTeacherFiles } from "../utils/teacherExtractor";
 import multer from "multer";
@@ -11,6 +11,7 @@ import { fileURLToPath } from 'url';
 import * as fs from 'fs';
 import { processTimetables } from "../utils/timetableProcessor";
 import csv from 'csv-parser';
+import { getSMSHistory } from './sms-handler.js';
 
 interface AbsentTeacher {
   id: number;
@@ -519,11 +520,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/sms-history", async (req, res) => {
+  app.get("/api/sms-history", (req, res) => {
     try {
-      const { getSMSHistory } = await import('./sms-handler.js');
       const history = getSMSHistory();
-      res.json(history);
+      res.json(history || []);
     } catch (error) {
       console.error('Error getting SMS history:', error);
       res.status(500).json({ 

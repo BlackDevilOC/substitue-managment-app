@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { parse } from 'csv-parse/sync';
+import { parse } from 'csv-parse';
 import { fileURLToPath } from 'url';
 import { Teacher, Assignment, SubstituteAssignment, VerificationReport, ProcessLog } from './types/substitute';
 import * as csv from 'csv-parser'; //Import csv-parser for use in loadTimetable
@@ -1120,7 +1120,7 @@ export class SubstituteManager {
     return new Promise((resolve, reject) => {
       const data: any[] = [];
       fs.createReadStream(timetablePath)
-        .pipe(csv())
+        .pipe(parse())
         .on('data', (row) => data.push(row))
         .on('end', () => {
           this.timetable = data;

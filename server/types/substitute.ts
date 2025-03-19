@@ -1,4 +1,3 @@
-
 export type Teacher = {
   id: string;
   name: string;
@@ -35,4 +34,14 @@ export interface ProcessLog {
   status: 'info' | 'warning' | 'error';
   data?: object;
   durationMs: number;
+}
+
+export interface SMSHistoryEntry {
+  id: string;
+  teacherId: string;
+  teacherName: string;
+  message: string;
+  sentAt: string;
+  status: 'pending' | 'sent' | 'failed';
+  method: string;
 }
