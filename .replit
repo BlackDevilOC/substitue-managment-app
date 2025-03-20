@@ -40,3 +40,20 @@ task = "packager.installForAll"
 task = "shell.exec"
 args = "npm run dev"
 waitForPort = 5000
+
+[[workflows.workflow]]
+name = "Build Android"
+author = 40376785
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run build"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npx cap sync android"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd android && ./gradlew assembleDebug"
