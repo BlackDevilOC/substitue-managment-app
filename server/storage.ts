@@ -11,6 +11,28 @@ const __dirname = path.dirname(__filename);
 
 const MemoryStore = createMemoryStore(session);
 
+export async function loadData(filename: string) {
+  const filePath = path.join(__dirname, '../data', filename);
+  try {
+    const data = await fs.promises.readFile(filePath, 'utf8');
+    return JSON.parse(data);
+  } catch (error) {
+    console.error(`Error loading ${filename}:`, error);
+    return null;
+  }
+}
+
+export async function saveData(filename: string, data: any) {
+  const filePath = path.join(__dirname, '../data', filename);
+  try {
+    await fs.promises.writeFile(filePath, JSON.stringify(data, null, 2));
+    return true;
+  } catch (error) {
+    console.error(`Error saving ${filename}:`, error);
+    return false;
+  }
+}
+
 export class Storage implements IStorage {
   private dataPath: string;
   private currentId: number = 1; // Initialize currentId
@@ -42,57 +64,9 @@ export class Storage implements IStorage {
     }
   }
 
-  private async saveData(filename: string, data: any) {
-    if (this.dataPath === 'localStorage') {
-      localStorage.setItem(filename, JSON.stringify(data));
-      return;
-    }
-    const filePath = this.getFilePath(filename);
-    await fs.promises.writeFile(filePath, JSON.stringify(data, null, 2));
-  }
-
-  private async loadData(filename: string) {
-    try {
-      if (this.dataPath === 'localStorage') {
-        const data = localStorage.getItem(filename);
-        return data ? JSON.parse(data) : [];
-      }
-      const filePath = this.getFilePath(filename);
-      const data = await fs.promises.readFile(filePath, 'utf-8');
-      return JSON.parse(data);
-    } catch (error) {
-      return [];
-    }
-  }
-
-  private ensureDataDirectory() {
-    if (!fs.existsSync(this.dataPath)) {
-      fs.mkdirSync(this.dataPath, { recursive: true });
-    }
-  }
-
-  private getFilePath(filename: string): string {
-    return path.join(this.dataPath, filename);
-  }
-
-  async saveData(filename: string, data: any) {
-    const filePath = this.getFilePath(filename);
-    await fs.promises.writeFile(filePath, JSON.stringify(data, null, 2));
-  }
-
-  async loadData(filename: string) {
-    const filePath = this.getFilePath(filename);
-    try {
-      const data = await fs.promises.readFile(filePath, 'utf-8');
-      return JSON.parse(data);
-    } catch (error) {
-      return []; // Return empty array instead of null
-    }
-  }
-
   private async loadCurrentId() {
       try {
-          const data = await this.loadData('currentId.json');
+          const data = await loadData('currentId.json');
           this.currentId = data || 1;
       } catch (error) {
           this.currentId = 1;
@@ -100,71 +74,70 @@ export class Storage implements IStorage {
   }
 
   private async saveCurrentId() {
-      await this.saveData('currentId.json', this.currentId);
+      await saveData('currentId.json', this.currentId);
   }
 
 
+  private getFilePath(filename: string): string {
+    return path.join(this.dataPath, filename);
+  }
+
+  //The following functions are removed as they are now redundant.
+  // private async saveData(filename: string, data: any) {}
+  // private async loadData(filename: string) {}
+
+
   private async loadUsers(): Promise<User[]> {
-    try {
-      if (this.dataPath === 'localStorage') {
-        const data = localStorage.getItem('users.json');
-        return data ? JSON.parse(data) : [];
-      }
-      const filePath = this.getFilePath('users.json');
-      const data = await fs.promises.readFile(filePath, 'utf-8');
-      return JSON.parse(data);
+    try{
+      const users = await loadData('users.json');
+      return users || [];
     } catch (error) {
       return [];
     }
   }
 
   private async saveUsers(users: User[]): Promise<void> {
-    if (this.dataPath === 'localStorage') {
-      localStorage.setItem('users.json', JSON.stringify(users));
-      return;
-    }
-    const filePath = this.getFilePath('users.json');
-    await fs.promises.writeFile(filePath, JSON.stringify(users, null, 2));
+    await saveData('users.json', users);
   }
 
   private async loadTeachers(): Promise<Teacher[]> {
-    return (await this.loadData('teachers.json')) || [];
+    return (await loadData('teachers.json')) || [];
   }
 
   private async saveTeachers(teachers: Teacher[]): Promise<void> {
-    await this.saveData('teachers.json', teachers);
+    await saveData('teachers.json', teachers);
   }
 
   private async loadSchedules(): Promise<Schedule[]> {
-    return (await this.loadData('schedules.json')) || [];
+    return (await loadData('schedules.json')) || [];
   }
 
   private async saveSchedules(schedules: Schedule[]): Promise<void> {
-    await this.saveData('schedules.json', schedules);
+    await saveData('schedules.json', schedules);
   }
 
   private async loadAbsences(): Promise<Absence[]> {
-    return (await this.loadData('absences.json')) || [];
+    return (await loadData('absences.json')) || [];
   }
 
   private async saveAbsences(absences: Absence[]): Promise<void> {
-    await this.saveData('absences.json', absences);
+    await saveData('absences.json', absences);
   }
 
   private async loadTeacherAttendances(): Promise<TeacherAttendance[]> {
-    return (await this.loadData('teacherAttendances.json')) || [];
+    return (await loadData('teacherAttendances.json')) || [];
   }
 
   private async saveTeacherAttendances(teacherAttendances: TeacherAttendance[]): Promise<void> {
-    await this.saveData('teacherAttendances.json', teacherAttendances);
+    await saveData('teacherAttendances.json', teacherAttendances);
   }
 
   private async loadSmsHistory(): Promise<SmsHistory[]> {
-    return (await this.loadData('smsHistory.json')) || [];
+    return (await loadData('smsHistory.json')) || [];
   }
 
   private async saveSmsHistory(smsHistory: SmsHistory[]): Promise<void> {
-    await this.saveData('smsHistory.json', smsHistory);
+    await saveData('smsHistory.json', smsHistory);
   }
 
 
@@ -237,7 +210,7 @@ export class Storage implements IStorage {
   }
 
   async clearTeachers() {
-    await this.saveData('teachers.json', []);
+    await saveData('teachers.json', []);
     console.log('All teachers deleted from database');
   }
 
@@ -430,7 +403,7 @@ export class Storage implements IStorage {
   }
 
   async clearSchedules(): Promise<void> {
-    await this.saveData('schedules.json', []);
+    await saveData('schedules.json', []);
   }
 }
 
